@@ -1,0 +1,44 @@
+name: Build QEMU for Android (armeabi-v7a)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - build-qemu.sh
+      - .github/workflows/build-qemu.yml
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install host tools
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y ninja-build meson pkg-config python3 xz-utils
+
+      - name: Build libraries (zlib, libffi, pcre2, glib, pixman)
+        run: bash build-qemu.sh deps
+
+      - name: Build QEMU
+        run: bash build-qemu.sh qemu
+
+      - name: Upload QEMU build
+        uses: actions/upload-artifact@v4
+        with:
+          name: qemu-android-armv7
+          path: out/qemu-android-armv7.tar.gz
+
+      - name: Upload logs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: build-logs
+          path: |
+            src/qemu/build/config.log
+            src/qemu/build/meson-logs/meson-log.txt
+            src/glib/build/meson-logs/meson-log.txt
+            src/pixman/build/meson-logs/meson-log.txt
+          if-no-files-found: ignore
